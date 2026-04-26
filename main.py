@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
-from routes import flowchart
-
-# Load environment variables
+# Load environment variables BEFORE importing routes
 load_dotenv()
+
+from routes import flowchart
 
 app = FastAPI(title="Flowchart Generator API")
 

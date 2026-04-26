@@ -1,5 +1,4 @@
 # run_api.py
-import os
 import subprocess
 
 def main():
@@ -12,7 +11,6 @@ if __name__ == "__main__":
 # -------------------------------------------
 
 # run_streamlit.py
-import os
 import subprocess
 
 def main():
