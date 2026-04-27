@@ -36,6 +36,23 @@ def get_mermaid_svg(code: str):
         st.warning(f"⚠️ SVG conversion failed: {str(e)[:50]}. You can still download as MermaidJS code.")
         return None
 
+def get_mermaid_png(code: str):
+    """Convert mermaid code to PNG using Mermaid Ink API"""
+    try:
+        encoded = base64.b64encode(code.encode()).decode()
+        png_url = f"https://mermaid.ink/img/{encoded}?type=png"
+        response = requests.get(png_url, timeout=30)
+        if response.status_code == 200:
+            return response.content, response.status_code
+        else:
+            return None, response.status_code
+    except requests.exceptions.Timeout:
+        st.warning("⏱️ PNG conversion timed out. Try again or download as MermaidJS code.")
+        return None, 408
+    except Exception as e:
+        st.warning(f"⚠️ PNG conversion failed: {str(e)[:50]}. You can still download as MermaidJS code.")
+        return None, 500
+
 def download_svg_button(code: str, key: str):
     """Helper function to create SVG download button with error handling"""
     if st.button(f"⏳ Converting to SVG...", key=f"{key}_converting"):
@@ -51,6 +68,29 @@ def download_svg_button(code: str, key: str):
                 )
             else:
                 st.error("❌ Failed to convert. Make sure your Mermaid syntax is valid.")
+
+def download_png_button(code: str, key: str):
+    """Helper function to create PNG download button with error handling"""
+    if st.button(f"⏳ Converting to PNG...", key=f"{key}_converting_png"):
+        with st.spinner("Converting Mermaid to PNG..."):
+            png_data, status = get_mermaid_png(code)
+            if png_data:
+                st.download_button(
+                    "✅ Click to Download PNG", 
+                    data=png_data, 
+                    file_name="flowchart.png", 
+                    mime="image/png", 
+                    key=f"{key}_final_png"
+                )
+            else:
+                if status == 400:
+                    st.error("❌ Invalid Mermaid syntax. Please check your code.")
+                elif status == 408:
+                    st.error("❌ Conversion timed out. Try again.")
+                elif status == 500:
+                    st.error("❌ Server error. Try again later.")
+                else:
+                    st.error(f"❌ Failed to convert (Status: {status}). Make sure your Mermaid syntax is valid.")
 
 def render_mermaid(code: str):
     if not code.strip().startswith("flowchart"):
@@ -118,7 +158,7 @@ with tab1:
                             with col2:
                                 download_svg_button(mermaid_code, "ai_tab_download")
                             with col3:
-                                pass
+                                download_png_button(mermaid_code, "ai_tab_download")
                     else:
                         st.error(f"❌ API Error: {response.status_code} - {response.text}")
                 except Exception as e:
@@ -143,11 +183,13 @@ process3 --> end"""
         st.subheader("📊 Flowchart Preview")
         try:
             render_mermaid(code_input)
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.download_button("📥 Download Mermaid Code", data=code_input, file_name="flowchart.mmd", mime="text/plain", key="manual_tab_download_code")
             with col2:
                 download_svg_button(code_input, "manual_tab_download")
+            with col3:
+                download_png_button(code_input, "manual_tab_download")
         except Exception as e:
             st.error(f"❌ Error rendering flowchart: {str(e)}")
 
@@ -220,11 +262,13 @@ with tab4:
                         mermaid_code = m_res.json()["mermaid_code"]
                         st.code(mermaid_code, language="mermaid")
                         render_mermaid(mermaid_code)
-                        btn_col1, btn_col2 = st.columns(2)
+                        btn_col1, btn_col2, btn_col3 = st.columns(3)
                         with btn_col1:
                             st.download_button("📥 Download Mermaid Code", mermaid_code, "flowchart.mmd", "text/plain", key="compare_mermaid_download_code")
                         with btn_col2:
                             download_svg_button(mermaid_code, "compare_mermaid_download")
+                        with btn_col3:
+                            download_png_button(mermaid_code, "compare_mermaid_download")
                     else:
                         st.error("Mermaid generation failed")
 
